@@ -16,8 +16,8 @@ router.get("/all_post",requireLogin,(req,res)=>{
 })
 
 router.post("/create_post",requireLogin,(req,res)=>{
-    const {title,body} = req.body
-    if(!title || !body){
+    const {title,body,url} = req.body
+    if(!title || !body || !url){
         return res.status(422).json({error:"Please add all the fields"})
     }
     console.log(req.user)
@@ -25,6 +25,7 @@ router.post("/create_post",requireLogin,(req,res)=>{
     const post = new Post({
         title,
         body,
+        photo:url,
         postedBy:req.user
     })
     post.save()
@@ -39,9 +40,11 @@ router.post("/create_post",requireLogin,(req,res)=>{
 
 
 router.get("/my_post", requireLogin, (req,res)=>{
+    console.log(req.id)
     Post.find({postedBy:req.id})
         .populate("postedBy","_id name")
         .then(posts=>{
+            // console.log(posts)
             return res.status(200).json({posts:posts})
         })
         .catch(err=>{

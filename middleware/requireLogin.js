@@ -4,11 +4,11 @@ const mongoose = require('mongoose')
 const User = mongoose.model("User")
 
 module.exports = (req,res,next)=>{
-    const {authorization} = req.headers
-    if(!authorization){
+    // console.log()
+    const {token} = req.cookies
+    if(!token){
         return res.status(401).json({error:"Unauthization"})
-    }
-    const token = authorization.replace("Bearer ","")
+    } 
     jwt.verify(token, JWT_SECRET, (err, payload)=>{
         if (err){
             return res.status(404).json({error:"You must be a logged in"})

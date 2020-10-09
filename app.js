@@ -7,6 +7,8 @@ const PORT = 5000
 const mongoose = require('mongoose')
 const {MONGOURI} = require('./keys')
 
+const cookieParser = require("cookie-parser")
+
 mongoose.connect(MONGOURI,{
     useNewUrlParser : true,
     useUnifiedTopology: true,
@@ -22,6 +24,7 @@ mongoose.connection.on('error',(error)=>{
 
 require("./models/user")
 require("./models/post")
+app.use(cookieParser());
 
 const auth_routes = require("./routes/auth")
 const post_routes = require("./routes/post")

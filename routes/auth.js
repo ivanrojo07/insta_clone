@@ -10,6 +10,7 @@ const router = express.Router()
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const {JWT_SECRET} = require("../keys")
+const { response } = require("express")
 
 
 router.get('/',(req,res)=>{
@@ -59,6 +60,10 @@ router.post("/signup",(req,res)=>{
         })
 })
 
+router.post("/logout",requireLogin,(req,res)=>{
+    res.clearCookie("token")
+    return res.status(200).json({message:"success"})
+})
 router.post("/signin",(req,res)=>{
     const {email, password} = req.body
     if (!email || !password ){
@@ -75,7 +80,9 @@ router.post("/signin",(req,res)=>{
                     if(doMatch){
                         // return res.status(200).json({message:"Login successfuly"})
                         const token = jwt.sign({_id:savedUser._id},JWT_SECRET)
-                        return res.status(200).json({token:token})
+                        res.cookie('token',token,{httpOnly:true})
+                        const {_id,name,email}= savedUser
+                        return res.status(200).json({token:token,user:{_id,name,email}})
                     }
                     else{
                         return res.status(422).json({error:"Password incorrect"})
