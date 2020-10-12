@@ -28,8 +28,9 @@ app.use(cookieParser());
 
 const auth_routes = require("./routes/auth")
 const post_routes = require("./routes/post")
+const user_routes = require("./routes/user")
 app.use(express.json())
-app.use([auth_routes,post_routes])
+app.use([auth_routes,post_routes, user_routes])
 
 app.listen(PORT,()=>{
     console.log("server is running on ",PORT)
