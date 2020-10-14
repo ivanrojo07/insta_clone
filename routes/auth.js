@@ -9,7 +9,7 @@ const router = express.Router()
 
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
-const {JWT_SECRET} = require("../keys")
+const {JWT_SECRET} = require("../config/keys")
 const { response } = require("express")
 
 
@@ -25,7 +25,7 @@ router.get('/protected',requireLogin,(req,res)=>{
 router.post("/signup",(req,res)=>{
     // console.log(req.body.name)
     // res.send(req.body.name)
-    const {name,email,password} = req.body
+    const {name,email,password,pic} = req.body
     if(!email || !password || !name){
         return res.status(422).json({"error":"please add all the field"})
     } 
@@ -40,7 +40,8 @@ router.post("/signup",(req,res)=>{
                     const user = new User({
                         "email":email,
                         "name":name,
-                        "password": hashed_password
+                        "password": hashed_password,
+                        "pic":pic
                     })
                     user.save()
                         .then(user=>{
@@ -81,8 +82,8 @@ router.post("/signin",(req,res)=>{
                         // return res.status(200).json({message:"Login successfuly"})
                         const token = jwt.sign({_id:savedUser._id},JWT_SECRET)
                         res.cookie('token',token,{httpOnly:true})
-                        const {_id,name,email}= savedUser
-                        return res.status(200).json({token:token,user:{_id,name,email}})
+                        const {_id,name,email,followers,following,pic}= savedUser
+                        return res.status(200).json({token:token,user:{_id,name,email,followers,following,pic}})
                     }
                     else{
                         return res.status(422).json({error:"Password incorrect"})
