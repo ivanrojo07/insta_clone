@@ -9,12 +9,39 @@ const router = express.Router()
 
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
-const {JWT_SECRET} = require("../config/keys")
-const { response } = require("express")
+const {JWT_SECRET, EMAIL_SERVICE, EMAIL_USER, EMAIL_PASSWORD} = require("../config/keys")
+const crypto = require("crypto")
+
+const nodemailer = require("nodemailer")
+
+var transporter = nodemailer.createTransport({
+    service: EMAIL_SERVICE,
+    auth:{
+        user : EMAIL_USER,
+        pass : EMAIL_PASSWORD
+    }
+})
+
 
 
 router.get('/',(req,res)=>{
+    var mailOptions = {
+        from : EMAIL_USER,
+        to : "ivanrojo07@gmail.com",
+        subject : "Mensaje de prueba",
+        text: "Hello world?", // plain text body
+        html: "<b>Hello world?</b>", // html body
+    }
+    transporter.sendMail(mailOptions,(error,info)=>{
+        if(error){
+            console.log(error)
+        }
+        else{
+            console.log("email sent: "+info.response)
+        }
+    })
     res.send("hello ")
+    
 })
 
 router.get('/protected',requireLogin,(req,res)=>{
@@ -45,6 +72,21 @@ router.post("/signup",(req,res)=>{
                     })
                     user.save()
                         .then(user=>{
+                            var mailOptions = {
+                                from : EMAIL_USER,
+                                to : user.email,
+                                subject : "Signup success",
+                                // text: "Hello world?", // plain text body
+                                html: "<h1>Welcome to instagram</h1>", // html body
+                            }
+                            transporter.sendMail(mailOptions,(error,info)=>{
+                                if(error){
+                                    console.log(error)
+                                }
+                                else{
+                                    console.log("email sent: "+info.response)
+                                }
+                            })
                             return res.status(201).json({'message':"saved successfuly"})
                         })
                         .catch(err=>{
@@ -92,5 +134,67 @@ router.post("/signin",(req,res)=>{
                 .catch(err=>res.status(422).json({error:err}))
         })
         .catch(err=>res.status(422).json({error:err}))
+})
+
+router.post("/reset-password",(req,res)=>{
+    crypto.randomBytes(32,(err,buffer)=>{
+        if(err){
+            console.log(err)
+        }
+        const token = buffer.toString("hex")
+        User.findOne({email:req.body.email})
+            .then((user)=>{
+                if(!user){
+                    return res.status(422).json({error:"User dont exists with that email"})
+                }
+                user.reset_token = token
+                user.expire_token = Date.now() + 3600000
+                user.save().then((result)=>{
+                    var mailOptions = {
+                        from : "no-reply@prueba.com",
+                        to : user.email,
+                        subject : "Password Reset",
+                        // text: "Hello world?", // plain text body
+                        html: `<p>You requestd for password reset</p>
+                        <h5>Click in this <a href="http://localhost:3000/reset_password/${user.reset_token}">link</a> to reset</h5>`, // html body
+                    }
+                    transporter.sendMail(mailOptions,(error,info)=>{
+                        if(error){
+                            console.log(error)
+                        }
+                        else{
+                            console.log("email sent: "+info.response)
+                        }
+                    })
+                    return res.status(201).json({message:"Check you email"})
+                })
+            })
+    })
+})
+
+
+router.post("/new-password",(req,res)=>{
+    const newPassword = req.body.password
+    const sentToken = req.body.token
+    User.findOne({reset_token:sentToken,expire_token:{$gt:Date.now()}})
+    .then(user=>{
+        if(!user){
+            return res.status(422).json({error:"Try again, session expired"})
+        }
+        else{
+            bcrypt.hash(newPassword,12).then(hashedPassword=>{
+                user.password = hashedPassword
+                user.reset_token = undefined
+                user.expire_token = undefined
+                user.save().then((savedUser)=>{
+                    return res.status(201).json({message:"password updated success"})
+                })
+            })
+        }
+    })
+    .catch((error)=>{
+        console.log(error)
+        return res.status(422).json({error:"Internal error, please try again"})
+    })
 })
 module.exports = router

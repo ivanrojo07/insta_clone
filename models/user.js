@@ -29,7 +29,9 @@ const userSchema = new mongoose.Schema({
             type:ObjectId,
             ref:"User"
         }
-    ]
+    ],
+    reset_token:String,
+    expire_token:Date,
 })
 
 mongoose.model("User", userSchema)
